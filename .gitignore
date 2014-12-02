@@ -2,3 +2,4 @@
 .idea
 cover
 aboutme.egg-info
+*.pyc
