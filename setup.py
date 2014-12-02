@@ -20,6 +20,7 @@ requires = [
     'alembic',
     'nose',
     'coverage',
+    'wtforms',
     ]
 
 setup(name='aboutme',
