@@ -5,7 +5,7 @@ from aboutme import views
 from .models import (
     DBSession,
     Base,
-    MyModel
+    # User
     )
 
 
@@ -21,9 +21,9 @@ def main(global_config, **settings):
     config.add_route('home', '/')
     config.add_route('login', '/login')
     config.add_route('logout', '/logout')
-    config.add_route('register', '/register')
+    config.add_route('registration', '/registration')
     config.add_route('user', '/{username}')
-    config.add_route('users', '/users')
     config.add_route('guests', '/guests')
+    config.add_route('check_username', '/check_username')
     config.scan(views)
     return config.make_wsgi_app()
