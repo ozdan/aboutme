@@ -1,4 +1,32 @@
-#login-form {
+form {
     width: 30%;
     margin: 0 auto;
+}
+
+#index {
+    width: 40%;
+    margin: 0 auto;
+}
+
+form input {
+    width: 300px;
+    margin-bottom: 20px;
+}
+
+.error {
+    color: red;
+}
+
+#user-list {
+    width: 40%;
+    margin: 0 auto;
+}
+
+.user-in-list {
+    margin-bottom: 20px;
+}
+
+#logout {
+    display: inline-block;
+    float: right;
 }
