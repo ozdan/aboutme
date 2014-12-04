@@ -7,7 +7,7 @@ from wtforms.validators import DataRequired, Email, Length
 strip_filter = lambda x: x.strip() if x else None
 
 
-class UserCreateForm(Form):
+class UserUpdateForm(Form):
     first_name = StringField('Имя', [Length(min=2, max=32), DataRequired()], filters=[strip_filter])
     last_name = StringField('Фамилия', [Length(min=2, max=32), DataRequired()], filters=[strip_filter])
     biography = TextAreaField(filters=[strip_filter])
@@ -15,10 +15,6 @@ class UserCreateForm(Form):
     work = StringField('Работа', [Length(max=50)], filters=[strip_filter])
     education = StringField('Образование', [Length(max=70)], filters=[strip_filter])
     interest = StringField('Местоположение', [Length(max=30)], filters=[strip_filter])
-
-
-class UserUpdateForm(UserCreateForm):
-    id = HiddenField()
 
 
 class LoginForm(Form):
@@ -32,5 +28,8 @@ class AccountCreateForm(LoginForm):
     email = StringField('Email', [DataRequired(), Email()], filters=[strip_filter])
 
 
-class AccountUpdateForm(AccountCreateForm):
+class AccountUpdateForm(Form):
+    username = StringField('Ник', [Length(min=3, max=30), DataRequired()], filters=[strip_filter])
+    email = StringField('Email', [DataRequired(), Email()], filters=[strip_filter])
+    password = PasswordField('Пароль', [DataRequired()])
     id = HiddenField()

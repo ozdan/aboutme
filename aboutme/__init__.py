@@ -29,6 +29,6 @@ def main(global_config, **settings):
     config.add_route('registration', '/registration')
     config.add_route('user', '/user/{username}')
     config.add_route('guests', '/guests')
-    config.add_route('check_username', '/check_username')
+    config.add_route('account', '/account')
     config.scan(views)
     return config.make_wsgi_app()

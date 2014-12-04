@@ -7,8 +7,7 @@ from pyramid.response import Response
 from pyramid.security import forget, remember
 from pyramid.view import view_config, notfound_view_config
 
-from sqlalchemy.exc import DBAPIError
-from aboutme.forms import LoginForm, AccountCreateForm
+from aboutme.forms import LoginForm, AccountCreateForm, AccountUpdateForm
 from aboutme.utils import unique_value_exists
 
 from .models import (
@@ -25,11 +24,6 @@ def home(request):
         return render_to_response('templates/users.mako', dct, request=request)
     else:
         return render_to_response('templates/index.mako', {}, request=request)
-    # try:
-    #     one = DBSession.query(User).filter(User.name == 'one').first()
-    # except DBAPIError:
-    #     return Response(conn_err_msg, content_type='text/plain', status_int=500)
-    # return {'one': one, 'project': 'aboutme'}
 
 
 @view_config(route_name='login', renderer='templates/login.mako')
@@ -52,19 +46,6 @@ def login(request):
 
     return {'form': form, 'message': message}
 
-    # return render_to_response(
-    #     'templates/login.mako',
-    #     {'form': form},
-    #     request=request
-    # )
-    # return dict(
-    #     message=message,
-    #     url=login_url,
-    #     came_from=came_from,
-    #     login=login,
-    #     password=password
-    # )
-
 
 @view_config(route_name='logout')
 def logout(request):
@@ -79,6 +60,7 @@ def registration(request):
     if request.method == 'POST' and form.validate():
         if not unique_value_exists(form):
             new_user = User()
+            form.data['password'] = sha256(form.data['password']).hexdigest()  # грязно
             form.populate_obj(new_user)
             DBSession.add(new_user)
             headers = remember(request, form.data['username'])
@@ -89,7 +71,8 @@ def registration(request):
 @view_config(route_name='user', renderer='templates/user.mako')
 def user(request):
     username = request.matchdict.get('username') or None
-    return {'username': username}
+    user = DBSession.query(User).filter_by(username=username).one()
+    return {'user': user}
 
 
 @view_config(route_name='guests')
@@ -101,3 +84,17 @@ def guests(request):
 def not_found(request):
     request.response.status = 404
     return {}
+
+
+@view_config(route_name='account', renderer='templates/account.mako')
+def account(request):
+    old_user = DBSession.query(User).filter_by(username=request.authenticated_userid).one()
+    form = AccountUpdateForm(request.POST, old_user)
+    if request.method == 'POST' and form.validate():
+        if not unique_value_exists(form, False):
+            form.data['password'] = sha256(form.data['password']).hexdigest()
+            form.populate_obj(old_user)
+            DBSession.add(old_user)
+            headers = remember(request, form.data['username'])
+            return HTTPFound(location=request.route_url('home'), headers=headers)
+    return {'form': form}

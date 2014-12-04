@@ -3,7 +3,7 @@ form {
     margin: 0 auto;
 }
 
-#index {
+#index, #user-list, #concrete-user {
     width: 40%;
     margin: 0 auto;
 }
@@ -15,11 +15,6 @@ form input {
 
 .error {
     color: red;
-}
-
-#user-list {
-    width: 40%;
-    margin: 0 auto;
 }
 
 .user-in-list {
