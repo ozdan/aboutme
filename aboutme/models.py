@@ -32,8 +32,8 @@ class User(Base):
     education = Column(String(70))
     interest = Column(String(30))
 
-    username = Column(String(32))
-    email = Column(String(64))
+    username = Column(String(32), unique=True)
+    email = Column(String(64), unique=True)
     password = Column(Text)
 
 # Index('my_index', MyModel.name, unique=True)
