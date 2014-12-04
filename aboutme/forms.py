@@ -22,14 +22,13 @@ class UserUpdateForm(UserCreateForm):
 
 
 class LoginForm(Form):
-    username = StringField('Имя пользователя или Email', [Length(min=3, max=30), DataRequired()], filters=[strip_filter])
+    username = StringField('Ник', [Length(min=3, max=30), DataRequired()], filters=[strip_filter])
     password = PasswordField('Пароль', [DataRequired()])
 
 
 class AccountCreateForm(LoginForm):
     first_name = StringField('Имя', [Length(min=2, max=32), DataRequired()], filters=[strip_filter])
     last_name = StringField('Фамилия', [Length(min=2, max=32), DataRequired()], filters=[strip_filter])
-    username = StringField('Имя пользователя', [Length(min=3, max=30), DataRequired()], filters=[strip_filter])
     email = StringField('Email', [DataRequired(), Email()], filters=[strip_filter])
 
 

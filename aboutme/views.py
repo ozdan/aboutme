@@ -1,13 +1,15 @@
 #-*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from paste.httpexceptions import HTTPFound
+from hashlib import sha256
+from pyramid.httpexceptions import HTTPFound
 from pyramid.renderers import render_to_response
 from pyramid.response import Response
 from pyramid.security import forget, remember
-from pyramid.view import view_config
+from pyramid.view import view_config, notfound_view_config
 
 from sqlalchemy.exc import DBAPIError
-from aboutme.forms import LoginForm
+from aboutme.forms import LoginForm, AccountCreateForm
+from aboutme.utils import unique_value_exists
 
 from .models import (
     DBSession,
@@ -18,7 +20,9 @@ from .models import (
 @view_config(route_name='home')
 def home(request):
     if request.authenticated_userid:
-        return render_to_response('templates/users.mako', {}, request=request)
+        user_list = DBSession.query(User).all()
+        dct = {'user_list': user_list}
+        return render_to_response('templates/users.mako', dct, request=request)
     else:
         return render_to_response('templates/index.mako', {}, request=request)
     # try:
@@ -28,23 +32,6 @@ def home(request):
     # return {'one': one, 'project': 'aboutme'}
 
 
-conn_err_msg = """\
-Pyramid is having a problem using your SQL database.  The problem
-might be caused by one of the following things:
-
-1.  You may need to run the "initialize_aboutme_db" script
-    to initialize your database tables.  Check your virtual
-    environment's "bin" directory for this script and try to run it.
-
-2.  Your database server may not be running.  Check that the
-    database server referred to by the "sqlalchemy.url" setting in
-    your "development.ini" file is running.
-
-After you fix the problem, please restart the Pyramid application to
-try it again.
-"""
-
-
 @view_config(route_name='login', renderer='templates/login.mako')
 def login(request):
     login_url = request.route_url('login')
@@ -52,19 +39,18 @@ def login(request):
     if referrer == login_url:
         referrer = '/'
     came_from = request.params.get('came_from', referrer)
-    # message = ''
-    # login = ''
-    # password = ''
+    message = ''
     form = LoginForm(request.POST)
     if request.method == 'POST' and form.validate():
-        login = request.params.get('login')
+        username = request.params.get('username')
         password = request.params.get('password')
-        if False:  # Find in DB
-            headers = remember(request, login)
+        user = DBSession.query(User).filter_by(username=username).one()
+        if user and sha256(password).hexdigest() == user.password:
+            headers = remember(request, username)
             return HTTPFound(location=came_from, headers=headers)
-        message = "Неправильный логин или пароль"
+        message = "Неправильный ник или пароль"
 
-    return {'form': form}
+    return {'form': form, 'message': message}
 
     # return render_to_response(
     #     'templates/login.mako',
@@ -87,16 +73,23 @@ def logout(request):
     return HTTPFound(location=url, headers=headers)
 
 
-@view_config(route_name='registration')
+@view_config(route_name='registration', renderer='templates/registration.mako')
 def registration(request):
-    return Response('OK')
+    form = AccountCreateForm(request.POST)
+    if request.method == 'POST' and form.validate():
+        if not unique_value_exists(form):
+            new_user = User()
+            form.populate_obj(new_user)
+            DBSession.add(new_user)
+            headers = remember(request, form.data['username'])
+            return HTTPFound(location=request.route_url('home'), headers=headers)
+    return {'form': form}
 
 
-@view_config(route_name='user')
+@view_config(route_name='user', renderer='templates/user.mako')
 def user(request):
     username = request.matchdict.get('username') or None
-    dct = dict(username=username)
-    return render_to_response('templates/user.mako', dct, request=request)
+    return {'username': username}
 
 
 @view_config(route_name='guests')
@@ -104,10 +97,7 @@ def guests(request):
     return Response('OK')
 
 
-@view_config(route_name='check_username')
-def check_username(request):
-    status = 'ok'
-    username = request.GET.get('username')
-    if DBSession.query(User).filter_by(username=username).exists():
-        status = 'error'
-    return {'status': status}
+@notfound_view_config(renderer='templates/404.mako')
+def not_found(request):
+    request.response.status = 404
+    return {}
