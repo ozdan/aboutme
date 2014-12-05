@@ -14,7 +14,7 @@ class UserUpdateForm(Form):
     location = StringField('Местоположение', [Length(max=50)], filters=[strip_filter])
     work = StringField('Работа', [Length(max=50)], filters=[strip_filter])
     education = StringField('Образование', [Length(max=70)], filters=[strip_filter])
-    interest = StringField('Местоположение', [Length(max=30)], filters=[strip_filter])
+    interest = StringField('Интересы', [Length(max=30)], filters=[strip_filter])
 
 
 class LoginForm(Form):

@@ -25,3 +25,7 @@ form input {
     display: inline-block;
     float: right;
 }
+
+textarea {
+    resize: none;
+}

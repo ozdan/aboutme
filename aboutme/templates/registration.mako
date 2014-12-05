@@ -43,7 +43,7 @@
     ${form.password()}
 </div>
 
-<div><input type="submit" value="Submit"></div>
+<div><input type="submit" value="Зарегистрироваться"></div>
 </form>
 
 </%block>

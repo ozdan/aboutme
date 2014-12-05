@@ -4,8 +4,6 @@
 
 <form action="${request.route_url('account')}" method="post">
 
-${form.id()}
-
 % for error in form.email.errors:
     <div class="error">${error}</div>
 % endfor
@@ -30,7 +28,7 @@ ${form.id()}
     ${form.password()}
 </div>
 
-<div><input type="submit" value="Submit"></div>
+<div><input type="submit" value="Сохранить изменения"></div>
 </form>
 
 </%block>

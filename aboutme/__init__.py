@@ -28,6 +28,7 @@ def main(global_config, **settings):
     config.add_route('logout', '/logout')
     config.add_route('registration', '/registration')
     config.add_route('user', '/user/{username}')
+    config.add_route('user_edit', '/user/{username}/edit')
     config.add_route('guests', '/guests')
     config.add_route('account', '/account')
     config.scan(views)

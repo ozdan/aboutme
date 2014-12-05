@@ -1,13 +1,14 @@
 #-*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from hashlib import sha256
-from pyramid.httpexceptions import HTTPFound
+from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from pyramid.renderers import render_to_response
 from pyramid.response import Response
 from pyramid.security import forget, remember
 from pyramid.view import view_config, notfound_view_config
+from sqlalchemy.orm.exc import NoResultFound
 
-from aboutme.forms import LoginForm, AccountCreateForm, AccountUpdateForm
+from aboutme.forms import LoginForm, AccountCreateForm, AccountUpdateForm, UserUpdateForm
 from aboutme.utils import unique_value_exists
 
 from .models import (
@@ -70,8 +71,11 @@ def registration(request):
 
 @view_config(route_name='user', renderer='templates/user.mako')
 def user(request):
-    username = request.matchdict.get('username') or None
-    user = DBSession.query(User).filter_by(username=username).one()
+    username = request.matchdict.get('username')
+    try:
+        user = DBSession.query(User).filter_by(username=username).one()
+    except NoResultFound:
+        raise HTTPNotFound()
     return {'user': user}
 
 
@@ -97,4 +101,18 @@ def account(request):
             DBSession.add(old_user)
             headers = remember(request, form.data['username'])
             return HTTPFound(location=request.route_url('home'), headers=headers)
+    return {'form': form}
+
+
+@view_config(route_name='user_edit', renderer='templates/user_edit.mako')
+def edit_user(request):
+    username = request.matchdict.get('username')
+    if username != request.authenticated_userid:
+        return HTTPFound(location=request.route_url('user', username=username))
+    old_user = DBSession.query(User).filter_by(username=username).one()
+    form = UserUpdateForm(request.POST, old_user)
+    if request.method == 'POST' and form.validate():
+        form.populate_obj(old_user)
+        DBSession.add(old_user)
+        return HTTPFound(location=request.route_url('user', username=username))
     return {'form': form}
