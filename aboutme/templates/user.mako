@@ -1,6 +1,9 @@
 <%inherit file="base.mako"/>
 <%block name="title">Пользователь ${user.first_name} ${user.last_name}</%block>
 <%block name="content">
+% if user.picture.original:
+<div id="background-user" style="background-image:url(${user.picture.locate(store)})">
+% endif
 <div id="concrete-user">
     <p>${user.first_name} ${user.last_name}</p>
     % if user.biography:
@@ -19,4 +22,7 @@
         <p>Интересы: ${user.interest}</p>
     % endif
 </div>
+% if user.picture.original:
+</div>
+% endif
 </%block>

@@ -13,7 +13,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import (
     scoped_session,
     sessionmaker,
-    )
+    relationship)
+from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy_imageattach.entity import image_attachment, Image
 
 from zope.sqlalchemy import ZopeTransactionExtension
 
@@ -35,5 +37,12 @@ class User(Base):
     username = Column(String(32), unique=True)
     email = Column(String(64), unique=True)
     password = Column(Text)
+    picture = image_attachment('UserPicture')
+
+
+class UserPicture(Base, Image):
+    __tablename__ = 'user_picture'
+    user_id = Column(Integer, ForeignKey(User.id), primary_key=True)
+    user = relationship(User)
 
 # Index('my_index', MyModel.name, unique=True)

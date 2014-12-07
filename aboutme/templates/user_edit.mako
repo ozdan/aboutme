@@ -2,7 +2,7 @@
 <%block name="title">Регистрация на сайте</%block>
 <%block name="content">
 
-<form action="${request.route_url('user_edit', username=request.authenticated_userid)}" method="post">
+<form action="${request.route_url('user_edit', username=request.authenticated_userid)}" method="post" enctype="multipart/form-data">
 
 % for error in form.first_name.errors:
     <div class="error">${error}</div>
@@ -58,6 +58,14 @@
 <div>
     <label>${form.interest.label}</label><br>
     ${form.interest(maxlength=30)}
+</div>
+
+% for error in form.picture.errors:
+    <div class="error">${error}</div>
+% endfor
+<div>
+    <label>${form.picture.label}</label><br>
+    ${form.picture()}
 </div>
 
 <div><input type="submit" value="Сохранить изменения"></div>

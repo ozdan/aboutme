@@ -7,6 +7,7 @@ from pyramid.response import Response
 from pyramid.security import forget, remember
 from pyramid.view import view_config, notfound_view_config
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy_imageattach.context import store_context
 
 from aboutme.forms import LoginForm, AccountCreateForm, AccountUpdateForm, UserUpdateForm
 from aboutme.utils import unique_value_exists
@@ -76,7 +77,8 @@ def user(request):
         user = DBSession.query(User).filter_by(username=username).one()
     except NoResultFound:
         raise HTTPNotFound()
-    return {'user': user}
+    from aboutme import store
+    return {'user': user, 'store': store}
 
 
 @view_config(route_name='guests')
@@ -112,6 +114,12 @@ def edit_user(request):
     old_user = DBSession.query(User).filter_by(username=username).one()
     form = UserUpdateForm(request.POST, old_user)
     if request.method == 'POST' and form.validate():
+        from aboutme import store
+        if form.picture.data != '':
+            with store_context(store):
+                old_user.picture.from_file(form.picture.data.file)
+                DBSession.flush()
+        del form._fields['picture']
         form.populate_obj(old_user)
         DBSession.add(old_user)
         return HTTPFound(location=request.route_url('user', username=username))

@@ -21,6 +21,7 @@ requires = [
     'nose',
     'coverage',
     'wtforms',
+    'sqlalchemy-imageattach',
     ]
 
 setup(name='aboutme',

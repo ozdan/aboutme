@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from wtforms import Form, StringField, TextAreaField, HiddenField, PasswordField
+from wtforms.fields.simple import FileField
 from wtforms.validators import DataRequired, Email, Length
 
 
@@ -15,6 +16,18 @@ class UserUpdateForm(Form):
     work = StringField('Работа', [Length(max=50)], filters=[strip_filter])
     education = StringField('Образование', [Length(max=70)], filters=[strip_filter])
     interest = StringField('Интересы', [Length(max=30)], filters=[strip_filter])
+    picture = FileField('Фон профиля')
+
+    def validate(self):
+        if self.picture.data != '':
+            fn = self.picture.data.filename
+            if fn.endswith('jpeg') or fn.endswith('jpg') or fn.endswith('png'):
+                return super(UserUpdateForm, self).validate()
+            else:
+                self.picture.errors = ['Файл должен быть изображением']
+                return False
+        else:
+            return super(UserUpdateForm, self).validate()
 
 
 class LoginForm(Form):

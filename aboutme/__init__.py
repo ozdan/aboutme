@@ -1,7 +1,10 @@
+import getpass
+import os
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.config import Configurator
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 from sqlalchemy import engine_from_config
+from sqlalchemy_imageattach.stores.fs import HttpExposedFileSystemStore
 from aboutme import views
 
 from .models import (
@@ -9,6 +12,15 @@ from .models import (
     Base,
     # User
     )
+
+PATH = '/home/%s/aboutme/images' % getpass.getuser()
+if not os.path.isdir(PATH):
+    os.makedirs(PATH)
+
+store = HttpExposedFileSystemStore(
+    path=PATH,
+    prefix='static/images/'
+)
 
 
 def main(global_config, **settings):
@@ -32,4 +44,6 @@ def main(global_config, **settings):
     config.add_route('guests', '/guests')
     config.add_route('account', '/account')
     config.scan(views)
-    return config.make_wsgi_app()
+    app = config.make_wsgi_app()
+    app = store.wsgi_middleware(app)
+    return app
