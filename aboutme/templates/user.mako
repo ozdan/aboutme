@@ -5,6 +5,9 @@
 <div id="background-user" style="background-image:url(${image})">
 % endif
 <div id="concrete-user">
+    %if user.username == request.authenticated_userid:
+        <p><b>Это я ж...</b></p>
+    %endif
     <p>${user.first_name} ${user.last_name}</p>
     % if user.biography:
         <p>Биография: ${user.biography}</p>

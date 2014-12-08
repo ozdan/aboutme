@@ -1,8 +1,9 @@
 import getpass
 import os
+from urlparse import urlparse
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.config import Configurator
-from pyramid.session import UnencryptedCookieSessionFactoryConfig
+from pymongo import Connection
 from sqlalchemy import engine_from_config
 from sqlalchemy_imageattach.stores.fs import HttpExposedFileSystemStore
 from aboutme import views
@@ -44,6 +45,19 @@ def main(global_config, **settings):
     config.add_route('guests', '/guests')
     config.add_route('account', '/account')
     config.scan(views)
+    db_url = urlparse(settings['mongo_uri'])
+    config.registry.db = Connection(
+        host=db_url.hostname,
+        port=db_url.port,
+    )
+
+    def add_db(request):
+        db = config.registry.db[db_url.path[1:]]
+        if db_url.username and db_url.password:
+            db.authenticate(db_url.username, db_url.password)
+        return db
+
+    config.add_request_method(add_db, 'db', reify=True)
     app = config.make_wsgi_app()
     app = store.wsgi_middleware(app)
     return app

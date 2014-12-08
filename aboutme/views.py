@@ -73,6 +73,21 @@ def registration(request):
 @view_config(route_name='user', renderer='templates/user.mako')
 def user(request):
     username = request.matchdict.get('username')
+    if request.authenticated_userid and username != request.authenticated_userid:
+        # неплохо бы сохранить все данные пользователя при авторизации
+        user = DBSession.query(User).filter_by(username=request.authenticated_userid).one()
+        from datetime import datetime
+        now = datetime.utcnow()
+        request.db.guests.update(
+            {'owner_username': username},
+            {'$set': {
+                'time': now,
+                'guest_first_name': user.first_name,
+                'guest_last_name': user.last_name,
+                'guest_username': user.username,
+            }},
+            True
+        )
     try:
         user = DBSession.query(User).filter_by(username=username).one()
     except NoResultFound:
@@ -83,9 +98,12 @@ def user(request):
     return result
 
 
-@view_config(route_name='guests')
+@view_config(route_name='guests', renderer='templates/guests.mako')
 def guests(request):
-    return Response('OK')
+    user_list = list(request.db.guests.find({
+        'owner_username': request.authenticated_userid
+    }))
+    return {'user_list': user_list}
 
 
 @notfound_view_config(renderer='templates/404.mako')

@@ -22,6 +22,7 @@ requires = [
     'coverage',
     'wtforms',
     'sqlalchemy-imageattach',
+    'pymongo',
     ]
 
 setup(name='aboutme',

@@ -14,6 +14,7 @@
     <div id="logout">
         <a href="${request.route_url('user_edit', username=request.authenticated_userid)}">Редактировать страницу</a>
         <a href="${request.route_url('account')}">Настройки аккаунта</a>
+        <a href="${request.route_url('guests')}">Гости</a>
         <a href="${request.route_url('logout')}">Выйти</a>
     </div>
     % endif
