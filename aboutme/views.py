@@ -3,14 +3,14 @@ from __future__ import unicode_literals
 from hashlib import sha256
 from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from pyramid.renderers import render_to_response
-from pyramid.response import Response
+from pyramid.response import Response, FileResponse
 from pyramid.security import forget, remember
 from pyramid.view import view_config, notfound_view_config
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy_imageattach.context import store_context
 
 from aboutme.forms import LoginForm, AccountCreateForm, AccountUpdateForm, UserUpdateForm
-from aboutme.utils import unique_value_exists
+from aboutme.utils import unique_value_exists, get_image
 
 from .models import (
     DBSession,
@@ -77,8 +77,10 @@ def user(request):
         user = DBSession.query(User).filter_by(username=username).one()
     except NoResultFound:
         raise HTTPNotFound()
-    from aboutme import store
-    return {'user': user, 'store': store}
+    result = {'user': user}
+    if user.picture:
+        result.update({'image': get_image(user, width=1840)})
+    return result
 
 
 @view_config(route_name='guests')
@@ -114,8 +116,8 @@ def edit_user(request):
     old_user = DBSession.query(User).filter_by(username=username).one()
     form = UserUpdateForm(request.POST, old_user)
     if request.method == 'POST' and form.validate():
-        from aboutme import store
         if form.picture.data != '':
+            from aboutme import store
             with store_context(store):
                 old_user.picture.from_file(form.picture.data.file)
                 DBSession.flush()

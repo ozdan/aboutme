@@ -2,7 +2,7 @@
 <%block name="title">Пользователь ${user.first_name} ${user.last_name}</%block>
 <%block name="content">
 % if user.picture.original:
-<div id="background-user" style="background-image:url(${user.picture.locate(store)})">
+<div id="background-user" style="background-image:url(${image})">
 % endif
 <div id="concrete-user">
     <p>${user.first_name} ${user.last_name}</p>
