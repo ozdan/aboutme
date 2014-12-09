@@ -10,8 +10,7 @@ from aboutme import views
 
 from .models import (
     DBSession,
-    Base,
-    # User
+    Base
     )
 
 PATH = '/home/%s/aboutme/images' % getpass.getuser()

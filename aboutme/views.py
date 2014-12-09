@@ -1,16 +1,17 @@
 #-*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from datetime import datetime
 from hashlib import sha256
+from pyramid.events import subscriber, BeforeRender
 from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from pyramid.renderers import render_to_response
-from pyramid.response import Response, FileResponse
 from pyramid.security import forget, remember
 from pyramid.view import view_config, notfound_view_config
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy_imageattach.context import store_context
 
 from aboutme.forms import LoginForm, AccountCreateForm, AccountUpdateForm, UserUpdateForm
-from aboutme.utils import unique_value_exists, get_image
+from aboutme.utils import unique_value_exists, get_image, mark_online, get_user_last_activity, ONLINE_LAST_MINUTES
 
 from .models import (
     DBSession,
@@ -73,12 +74,15 @@ def registration(request):
 @view_config(route_name='user', renderer='templates/user.mako')
 def user(request):
     username = request.matchdict.get('username')
+    last_activity = get_user_last_activity(username)
+    online = False
+    now = datetime.utcnow()
+    if last_activity and (now - last_activity).seconds / 60 < ONLINE_LAST_MINUTES:
+        online = True
     if request.authenticated_userid and username != request.authenticated_userid:
-        # неплохо бы сохранить все данные пользователя при авторизации
+        # неплохо бы сохранить все данные пользователя при авторизации в том же redis и не делать этот запрос
         user = DBSession.query(User).filter_by(username=request.authenticated_userid).one()
-        from datetime import datetime
-        now = datetime.utcnow()
-        request.db.guests.update(
+        request.db.guests.update(  # запоминаю только последний вход в гости
             {'owner_username': username},
             {'$set': {
                 'time': now,
@@ -92,7 +96,7 @@ def user(request):
         user = DBSession.query(User).filter_by(username=username).one()
     except NoResultFound:
         raise HTTPNotFound()
-    result = {'user': user}
+    result = {'user': user, 'online': online}
     if user.picture:
         result.update({'image': get_image(user, width=1840)})
     return result
@@ -144,3 +148,8 @@ def edit_user(request):
         DBSession.add(old_user)
         return HTTPFound(location=request.route_url('user', username=username))
     return {'form': form}
+
+
+@subscriber(BeforeRender)
+def add_global(event):
+    mark_online(event['request'].authenticated_userid)

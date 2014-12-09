@@ -23,6 +23,7 @@ requires = [
     'wtforms',
     'sqlalchemy-imageattach',
     'pymongo',
+    'redis',
     ]
 
 setup(name='aboutme',

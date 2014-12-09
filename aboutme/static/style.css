@@ -45,3 +45,10 @@ textarea {
     top: 80px;
     /*position: absolute;*/
 }
+
+.online {
+    color: deepskyblue;
+    float: right;
+    /*position: relative;*/
+    display: inline-block;
+}

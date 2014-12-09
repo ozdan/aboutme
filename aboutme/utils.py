@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from datetime import datetime
+from redis import Redis
+import time
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import exists
 from aboutme.models import DBSession, User
@@ -34,3 +37,25 @@ def get_image(user, width=None, height=None):
         image.user = user
         DBSession.flush()
     return image.locate(store=store)
+
+connection = Redis()
+ONLINE_LAST_MINUTES = 5  # корявенько здесь держать настройки, в Django для этих целей settings.py
+
+
+def mark_online(user_id):
+    if user_id:
+        now = int(time.time())
+        expires = now + (ONLINE_LAST_MINUTES * 60) + 10
+        user_key = 'user_activity/%s' % user_id
+        p = connection.pipeline()
+        p.set(user_key, now)
+        p.expireat(user_key, expires)
+        p.execute()
+
+
+def get_user_last_activity(user_id):
+    if user_id:
+        last_active = connection.get('user_activity/%s' % user_id)
+        if last_active is None:
+            return None
+        return datetime.utcfromtimestamp(int(last_active))
