@@ -1,55 +1,42 @@
+# -*- coding: utf-8
+from __future__ import unicode_literals
+from pyramid.paster import get_app
 import unittest
-import transaction
-
-from pyramid import testing
-
-from .models import DBSession
+from webtest import TestApp
+from .fixtures import load_data
+from .models import Base
 
 
 class TestMyViewSuccessCondition(unittest.TestCase):
     def setUp(self):
-        self.config = testing.setUp()
-        from sqlalchemy import create_engine
-        engine = create_engine('sqlite://')
-        from .models import (
-            Base,
-            MyModel,
-            )
-        DBSession.configure(bind=engine)
-        Base.metadata.create_all(engine)
-        with transaction.manager:
-            model = MyModel(name='one', value=55)
-            DBSession.add(model)
+        self.test_app = TestApp(get_app('testing.ini'))
+        Base.metadata.create_all()
+        self.trans = Base.metadata.bind.connect()
+        load_data()
 
     def tearDown(self):
-        DBSession.remove()
-        testing.tearDown()
+        Base.metadata.drop_all()
 
-    def test_passing_view(self):
-        from .views import my_view
-        request = testing.DummyRequest()
-        info = my_view(request)
-        self.assertEqual(info['one'].name, 'one')
-        self.assertEqual(info['project'], 'aboutme')
+    def not_authenticated(self, response):
+        self.assertNotIn('Редактировать страницу', response.html.text)
+        self.assertNotIn('Настройки аккаунта', response.html.text)
+        self.assertNotIn('Гости', response.html.text)
+        self.assertNotIn('Выйти', response.html.text)
 
+    def authenticated(self, response):
+        self.assertIn('Редактировать страницу', response.html.text)
+        self.assertIn('Настройки аккаунта', response.html.text)
+        self.assertIn('Гости', response.html.text)
+        self.assertIn('Выйти', response.html.text)
 
-class TestMyViewFailureCondition(unittest.TestCase):
-    def setUp(self):
-        self.config = testing.setUp()
-        from sqlalchemy import create_engine
-        engine = create_engine('sqlite://')
-        from .models import (
-            Base,
-            MyModel,
-            )
-        DBSession.configure(bind=engine)
+    def test_index_without_login(self):
+        res = self.test_app.get('/')
+        self.assertIn('войдите', res.html.text)
+        self.assertIn('зарегистрируйтесь', res.html.text)
+        self.not_authenticated(res)
 
-    def tearDown(self):
-        DBSession.remove()
-        testing.tearDown()
-
-    def test_failing_view(self):
-        from .views import my_view
-        request = testing.DummyRequest()
-        info = my_view(request)
-        self.assertEqual(info.status_int, 500)
+    def test_registration_empty(self):
+        res = self.test_app.post('/registration', {})
+        self.not_authenticated(res)
+        error_string = 'This field is required'
+        self.assertEqual(res.html.text.count(error_string), 5)

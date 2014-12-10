@@ -5,6 +5,7 @@
 
 <html>
     <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title><%block name="title"></%block></title>
         <link href="${request.static_url('aboutme:static/style.css')}" rel="stylesheet">
     </head>

@@ -6,12 +6,7 @@ from pyramid.config import Configurator
 from pymongo import Connection
 from sqlalchemy import engine_from_config
 from sqlalchemy_imageattach.stores.fs import HttpExposedFileSystemStore
-from aboutme import views
 
-from .models import (
-    DBSession,
-    Base
-    )
 
 PATH = '/home/%s/aboutme/images' % getpass.getuser()
 if not os.path.isdir(PATH):
@@ -27,7 +22,16 @@ def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
     engine = engine_from_config(settings, 'sqlalchemy.')
-    DBSession.configure(bind=engine)
+
+    config_file = global_config['__file__']
+    if config_file.endswith('development.ini'):
+        from .models import DBSession, Base, User
+        session = DBSession
+    elif config_file.endswith('testing.ini'):
+        from .models import fixture_session, Base, User
+        session = fixture_session
+
+    session.configure(bind=engine)
     Base.metadata.bind = engine
     config = Configurator(
         settings=settings,
@@ -43,7 +47,7 @@ def main(global_config, **settings):
     config.add_route('user_edit', '/user/{username}/edit')
     config.add_route('guests', '/guests')
     config.add_route('account', '/account')
-    config.scan(views)
+    config.scan('aboutme.views')
     db_url = urlparse(settings['mongo_uri'])
     config.registry.db = Connection(
         host=db_url.hostname,

@@ -16,8 +16,23 @@ from sqlalchemy.orm import (
     relationship)
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy_imageattach.entity import image_attachment, Image
+from transaction._manager import ThreadTransactionManager
+from transaction._transaction import Transaction
 
 from zope.sqlalchemy import ZopeTransactionExtension
+
+
+class FixtureTransactionManager(ThreadTransactionManager):
+    def get(self):
+        '''
+        при сохранении self._txn = Transaction(self._synchs, self)
+        сносятся фикстуры перед самым вызовом self.test_app.get() или post()
+        :return:
+        '''
+        return Transaction(self._synchs, self)
+fixture_session = scoped_session(
+    sessionmaker(extension=ZopeTransactionExtension(transaction_manager=FixtureTransactionManager()))
+)
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()

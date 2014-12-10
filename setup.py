@@ -24,6 +24,7 @@ requires = [
     'sqlalchemy-imageattach',
     'pymongo',
     'redis',
+    'webtest',
     ]
 
 setup(name='aboutme',
