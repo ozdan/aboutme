@@ -10,19 +10,17 @@ from pyramid.view import view_config, notfound_view_config
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy_imageattach.context import store_context
 
+from aboutme import global_db_session
 from aboutme.forms import LoginForm, AccountCreateForm, AccountUpdateForm, UserUpdateForm
 from aboutme.utils import unique_value_exists, get_image, mark_online, get_user_last_activity, ONLINE_LAST_MINUTES
 
-from .models import (
-    DBSession,
-    User,
-    )
+from .models import User
 
 
 @view_config(route_name='home')
 def home(request):
     if request.authenticated_userid:
-        user_list = DBSession.query(User).all()
+        user_list = global_db_session.query(User).all()
         dct = {'user_list': user_list}
         return render_to_response('templates/users.mako', dct, request=request)
     else:
@@ -41,7 +39,7 @@ def login(request):
     if request.method == 'POST' and form.validate():
         username = request.params.get('username')
         password = request.params.get('password')
-        user = DBSession.query(User).filter_by(username=username).one()
+        user = global_db_session.query(User).filter_by(username=username).one()
         if user and sha256(password).hexdigest() == user.password:
             headers = remember(request, username)
             return HTTPFound(location=came_from, headers=headers)
@@ -65,7 +63,7 @@ def registration(request):
             new_user = User()
             form.data['password'] = sha256(form.data['password']).hexdigest()  # грязно
             form.populate_obj(new_user)
-            DBSession.add(new_user)
+            global_db_session.add(new_user)
             headers = remember(request, form.data['username'])
             return HTTPFound(location=request.route_url('home'), headers=headers)
     return {'form': form}
@@ -74,14 +72,14 @@ def registration(request):
 @view_config(route_name='user', renderer='templates/user.mako')
 def user(request):
     username = request.matchdict.get('username')
-    last_activity = get_user_last_activity(username)
+    last_activity = get_user_last_activity(request, username)
     online = False
     now = datetime.utcnow()
     if last_activity and (now - last_activity).seconds / 60 < ONLINE_LAST_MINUTES:
         online = True
     if request.authenticated_userid and username != request.authenticated_userid:
         # неплохо бы сохранить все данные пользователя при авторизации в том же redis и не делать этот запрос
-        user = DBSession.query(User).filter_by(username=request.authenticated_userid).one()
+        user = global_db_session.query(User).filter_by(username=request.authenticated_userid).one()
         request.db.guests.update(  # запоминаю только последний вход в гости
             {'owner_username': username},
             {'$set': {
@@ -93,7 +91,7 @@ def user(request):
             True
         )
     try:
-        user = DBSession.query(User).filter_by(username=username).one()
+        user = global_db_session.query(User).filter_by(username=username).one()
     except NoResultFound:
         raise HTTPNotFound()
     result = {'user': user, 'online': online}
@@ -118,13 +116,13 @@ def not_found(request):
 
 @view_config(route_name='account', renderer='templates/account.mako')
 def account(request):
-    old_user = DBSession.query(User).filter_by(username=request.authenticated_userid).one()
+    old_user = global_db_session.query(User).filter_by(username=request.authenticated_userid).one()
     form = AccountUpdateForm(request.POST, old_user)
     if request.method == 'POST' and form.validate():
         if not unique_value_exists(form, False):
             form.data['password'] = sha256(form.data['password']).hexdigest()
             form.populate_obj(old_user)
-            DBSession.add(old_user)
+            global_db_session.add(old_user)
             headers = remember(request, form.data['username'])
             return HTTPFound(location=request.route_url('home'), headers=headers)
     return {'form': form}
@@ -135,21 +133,21 @@ def edit_user(request):
     username = request.matchdict.get('username')
     if username != request.authenticated_userid:
         return HTTPFound(location=request.route_url('user', username=username))
-    old_user = DBSession.query(User).filter_by(username=username).one()
+    old_user = global_db_session.query(User).filter_by(username=username).one()
     form = UserUpdateForm(request.POST, old_user)
     if request.method == 'POST' and form.validate():
         if form.picture.data != '':
             from aboutme import store
             with store_context(store):
                 old_user.picture.from_file(form.picture.data.file)
-                DBSession.flush()
+                global_db_session.flush()
         del form._fields['picture']
         form.populate_obj(old_user)
-        DBSession.add(old_user)
+        global_db_session.add(old_user)
         return HTTPFound(location=request.route_url('user', username=username))
     return {'form': form}
 
 
 @subscriber(BeforeRender)
 def add_global(event):
-    mark_online(event['request'].authenticated_userid)
+    mark_online(event['request'], event['request'].authenticated_userid)
