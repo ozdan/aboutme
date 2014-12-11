@@ -1,6 +1,7 @@
 # -*- coding: utf-8
 from __future__ import unicode_literals
 from pyramid.paster import get_app
+from subprocess import PIPE, Popen
 import unittest
 from webtest import TestApp
 from .fixtures import load_data
@@ -12,10 +13,12 @@ class TestMyViewSuccessCondition(unittest.TestCase):
         self.test_app = TestApp(get_app('testing.ini'))
         Base.metadata.create_all()
         self.trans = Base.metadata.bind.connect()
+        self.redis_server = Popen(["redis-server", "--port 63790"], stdout=PIPE)
         load_data()
 
     def tearDown(self):
         Base.metadata.drop_all()
+        self.redis_server.kill()
 
     def not_authenticated(self, response):
         self.assertNotIn('Редактировать страницу', response.html.text)
