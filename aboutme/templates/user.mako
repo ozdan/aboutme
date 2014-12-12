@@ -7,7 +7,7 @@
 <div id="concrete-user">
 ##    <h1>Д - дизайн</h1>
     %if user.username == request.authenticated_userid:
-        <p><b>Это я ж...</b></p>
+        <p><b>Это ж я...</b></p>
     %endif
     <b><span class="online">${'Online' if online else ''}</span></b>
     <p>${user.first_name} ${user.last_name}</p>

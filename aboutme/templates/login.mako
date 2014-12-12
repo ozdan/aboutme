@@ -1,5 +1,5 @@
 <%inherit file="base.mako"/>
-<%block name="title">Регистрация на сайте</%block>
+<%block name="title">Вход на сайт</%block>
 <%block name="content">
 
 <div>

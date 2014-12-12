@@ -22,7 +22,7 @@ from transaction._transaction import Transaction
 from zope.sqlalchemy import ZopeTransactionExtension
 
 
-class FixtureTransactionManager(ThreadTransactionManager):
+class TestTransactionManager(ThreadTransactionManager):
     def get(self):
         '''
         при сохранении self._txn = Transaction(self._synchs, self)
@@ -30,8 +30,10 @@ class FixtureTransactionManager(ThreadTransactionManager):
         :return:
         '''
         return Transaction(self._synchs, self)
-fixture_session = scoped_session(
-    sessionmaker(extension=ZopeTransactionExtension(transaction_manager=FixtureTransactionManager()))
+test_session = scoped_session(
+    sessionmaker(
+        extension=ZopeTransactionExtension(transaction_manager=TestTransactionManager())
+    )
 )
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))

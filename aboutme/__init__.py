@@ -21,7 +21,7 @@ store = HttpExposedFileSystemStore(
 
 
 global_db_session = None
-ONLINE_LAST_MINUTES = 5  # корявенько здесь держать настройки, в Django для этих целей settings.py
+ONLINE_LAST_MINUTES = 5
 
 
 def main(global_config, **settings):
@@ -35,8 +35,8 @@ def main(global_config, **settings):
         from .models import DBSession, Base, User
         global_db_session = DBSession
     elif config_file.endswith('testing.ini'):
-        from .models import fixture_session, Base, User
-        global_db_session = fixture_session
+        from .models import test_session, Base, User
+        global_db_session = test_session
 
     global_db_session.configure(bind=engine)
     Base.metadata.bind = engine

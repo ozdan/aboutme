@@ -39,11 +39,13 @@ def login(request):
     if request.method == 'POST' and form.validate():
         username = request.params.get('username')
         password = request.params.get('password')
-        user = global_db_session.query(User).filter_by(username=username).one()
-        if user and sha256(password).hexdigest() == user.password:
+        try:
+            global_db_session.query(User)\
+                .filter_by(username=username, password=sha256(password).hexdigest()).one()
             headers = remember(request, username)
             return HTTPFound(location=came_from, headers=headers)
-        message = "Неправильный ник или пароль"
+        except NoResultFound:
+            message = 'Неправильный ник или пароль'
 
     return {'form': form, 'message': message}
 
@@ -61,11 +63,10 @@ def registration(request):
     if request.method == 'POST' and form.validate():
         if not unique_value_exists(form):
             new_user = User()
-            form.data['password'] = sha256(form.data['password']).hexdigest()  # грязно
             form.populate_obj(new_user)
             global_db_session.add(new_user)
             headers = remember(request, form.data['username'])
-            return HTTPFound(location=request.route_url('home'), headers=headers)
+            return HTTPFound(location=request.route_url('user', username=new_user.username), headers=headers)
     return {'form': form}
 
 
@@ -120,7 +121,6 @@ def account(request):
     form = AccountUpdateForm(request.POST, old_user)
     if request.method == 'POST' and form.validate():
         if not unique_value_exists(form, False):
-            form.data['password'] = sha256(form.data['password']).hexdigest()
             form.populate_obj(old_user)
             global_db_session.add(old_user)
             headers = remember(request, form.data['username'])
